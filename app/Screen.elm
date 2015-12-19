@@ -1,41 +1,23 @@
+module Screen where
+
 import List exposing (..)
 import Color exposing (..)
 import Graphics.Collage exposing (..)
 import Graphics.Element exposing (..)
 
-type alias Snake = List (Coords)
-type alias Apple = Coords
 type alias Coords = { x:Int, y:Int }
-type alias Screen = List (List (Color))
+type alias Screen = List (List Color)
 
-apple : Apple
-apple = { x = 1, y = 2 }
-
-snake : Snake
-snake =
-  [ { x = 3, y = 5 }
-  , { x = 4, y = 5 }
-  , { x = 5, y = 5 }
-  , { x = 6, y = 5 }
-  , { x = 6, y = 4 }
-  , { x = 6, y = 3 }
-  ]
-
-main =
-  emptyScreen 10
-    |> drawApple apple
-    |> drawSnake snake
-    |> printScreen
-
-emptyScreen : Int -> Screen
-emptyScreen size =
+size : Int -> Screen
+size screenSize =
   let
-    row = repeat size white
+    row = repeat screenSize white
   in
-    repeat size row
+    repeat screenSize row
 
-printScreen : Screen -> Element
-printScreen screen =
+
+print : Screen -> Element
+print screen =
   let
     printRow row = map cell row
       |> flow right
@@ -43,12 +25,6 @@ printScreen screen =
     map printRow screen
       |> flow down
 
-drawApple : Apple -> Screen -> Screen
-drawApple = colorCell red
-
-drawSnake : Snake -> Screen -> Screen
-drawSnake snake screen =
-  foldr (colorCell green) screen snake
 
 colorCell : Color -> Coords -> Screen -> Screen
 colorCell color { x, y } screen =
@@ -56,6 +32,7 @@ colorCell color { x, y } screen =
     updateRow = update x (always color)
   in
     update y updateRow screen
+
 
 cell : Color -> Element
 cell color =
@@ -70,6 +47,7 @@ cell color =
         cellOutline
       ]
 
+
 update : Int -> (a -> a) -> List (a) -> List (a)
 update index updater list =
   case (index, list) of
@@ -79,5 +57,3 @@ update index updater list =
       updater value :: tail
     (_, head :: tail) ->
       head :: (update (index - 1)  updater tail)
-
-
