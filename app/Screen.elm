@@ -8,6 +8,7 @@ import Graphics.Element exposing (..)
 type alias Coords = { x:Int, y:Int }
 type alias Screen = List (List Color)
 
+
 size : Int -> Screen
 size screenSize =
   let
