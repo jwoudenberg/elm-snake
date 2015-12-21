@@ -28,7 +28,7 @@ apple =
 
 snake : Snake
 snake =
-  Signal.map (\coords -> [coords]) position
+  lastN 5 position
 
 
 drawScreen : Apple -> Snake -> Signal Element
@@ -86,3 +86,11 @@ direction =
       |> Signal.foldp (+) 0
       |> Signal.map directionFromTurns
 
+
+lastN : Int -> Signal a -> Signal (List a)
+lastN n signal =
+  let
+    keepN x xs =
+    List.take n (x :: xs)
+  in
+    Signal.foldp keepN [] signal
