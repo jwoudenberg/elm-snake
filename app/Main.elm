@@ -8,8 +8,13 @@ import Time exposing (fps)
 
 type Direction = Up | Down | Right | Left
 
-type alias Snake = List Screen.Coords
-type alias Apple = Screen.Coords
+type alias Snake = Signal (List Screen.Coords)
+type alias Apple = Signal Screen.Coords
+
+
+main : Signal Element
+main =
+  drawScreen apple snake
 
 
 boardSize : Int
@@ -17,33 +22,29 @@ boardSize = 10
 
 
 apple : Apple
-apple = { x = 1, y = 2 }
+apple =
+  Signal.constant { x = 1, y = 2 }
 
 
-main : Signal Element
-main =
-  let
-    snakeStream =
-      Signal.map (\coords -> [coords]) position
-  in
-    Signal.map (drawScreen apple) snakeStream
+snake : Snake
+snake =
+  Signal.map (\coords -> [coords]) position
 
 
-drawScreen : Apple -> Snake -> Element
+drawScreen : Apple -> Snake -> Signal Element
 drawScreen apple snake =
-  Screen.size boardSize
-    |> drawApple apple
-    |> drawSnake snake
-    |> Screen.print
-
-
-drawApple : Apple -> Screen.Screen -> Screen.Screen
-drawApple = Screen.colorCell red
-
-
-drawSnake : Snake -> Screen.Screen -> Screen.Screen
-drawSnake snake screen =
-  foldr (Screen.colorCell green) screen snake
+  let
+    drawApplePos =
+      Screen.colorCell red
+    drawSnakePos snakePos screen =
+      foldr (Screen.colorCell green) screen snakePos
+    drawFrame applePos snakePos =
+      Screen.size boardSize
+        |> drawApplePos applePos
+        |> drawSnakePos snakePos
+        |> Screen.print
+  in
+    Signal.map2 drawFrame apple snake
 
 
 position : Signal Screen.Coords
