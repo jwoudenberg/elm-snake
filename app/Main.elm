@@ -4,7 +4,8 @@ import Graphics.Element exposing (Element)
 import Screen
 import Keyboard
 import Signal
-import Time exposing (fps)
+import Random
+import Time
 
 type Direction = Up | Down | Right | Left
 
@@ -19,16 +20,6 @@ main =
 
 boardSize : Int
 boardSize = 10
-
-
-apple : Apple
-apple =
-  Signal.constant { x = 1, y = 2 }
-
-
-snake : Snake
-snake =
-  lastN 5 position
 
 
 drawScreen : Apple -> Snake -> Signal Element
@@ -47,10 +38,57 @@ drawScreen apple snake =
     Signal.map2 drawFrame apple snake
 
 
+snake : Snake
+snake =
+  Signal.map (\(snakePos, _, _) -> snakePos) snakeAndApple
+
+
+apple : Apple
+apple =
+  Signal.map (\(_, applePos, _) -> applePos) snakeAndApple
+
+
+coordsGenerator : Random.Generator { x: Int, y: Int }
+coordsGenerator =
+  let
+    maxCoord = boardSize - 1
+    pairGenerator =
+      Random.pair (Random.int 0 maxCoord) (Random.int 0 maxCoord)
+    pairToCoords (x, y) =
+      { x = x, y = y }
+  in
+    Random.map pairToCoords pairGenerator
+
+
+snakeAndApple : Signal (List Screen.Coords, Screen.Coords, Random.Seed)
+snakeAndApple =
+  let
+    startSnake =
+      [startCoords]
+    (startApple, startSeed) =
+      Random.generate coordsGenerator (Random.initialSeed 42)
+    nextTick newPos (snakePos, applePos, seed) =
+      let
+        appleEaten = applePos `List.member` snakePos
+        snakeLength = List.length snakePos
+        newSnakePos = newPos :: snakePos
+        (newApplePos, newSeed) = Random.generate coordsGenerator seed
+      in
+        if appleEaten then
+          (newSnakePos, newApplePos, newSeed)
+        else
+          (List.take snakeLength newSnakePos, applePos, seed)
+  in
+    Signal.foldp nextTick (startSnake, startApple, startSeed) position
+
+
+startCoords : Screen.Coords
+startCoords = { x = 2, y = 3 }
+
+
 position : Signal Screen.Coords
 position =
   let
-    startCoords = { x = 2, y = 3 }
     step : Direction -> Screen.Coords -> Screen.Coords
     step direction coords =
       case direction of
@@ -63,7 +101,7 @@ position =
         Right ->
           { coords | x = (coords.x + 1) % boardSize }
   in
-    Signal.sampleOn (fps 2) direction
+    Signal.sampleOn (Time.fps 2) direction
       |> Signal.foldp step startCoords
 
 
@@ -85,12 +123,3 @@ direction =
       |> Signal.dropRepeats
       |> Signal.foldp (+) 0
       |> Signal.map directionFromTurns
-
-
-lastN : Int -> Signal a -> Signal (List a)
-lastN n signal =
-  let
-    keepN x xs =
-    List.take n (x :: xs)
-  in
-    Signal.foldp keepN [] signal
