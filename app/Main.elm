@@ -1,6 +1,7 @@
 import List exposing (..)
 import Color exposing (..)
 import Graphics.Element exposing (Element)
+import Text
 import Screen
 import Keyboard
 import Signal
@@ -34,8 +35,24 @@ drawScreen apple snake =
         |> drawApplePos applePos
         |> drawSnakePos snakePos
         |> Screen.print
+    drawGame gameEnded applePos snakePos =
+      if gameEnded then
+        scoreScreen
+      else
+        drawFrame applePos snakePos
   in
-    Signal.map2 drawFrame apple snake
+    Signal.map3 drawGame (gameOver snake) apple snake
+
+
+scoreScreen : Element
+scoreScreen =
+  Text.fromString "GAME OVER!"
+    |> Graphics.Element.centered
+
+
+gameOver : Snake -> Signal Bool
+gameOver snake =
+  Signal.foldp (||) False (snakeCollides snake)
 
 
 snake : Snake
@@ -46,6 +63,19 @@ snake =
 apple : Apple
 apple =
   Signal.map (\(_, applePos, _) -> applePos) snakeAndApple
+
+
+snakeCollides : Snake  -> Signal Bool
+snakeCollides snake =
+  let
+    snakePosIntersects snakePos =
+      case snakePos of
+        [] ->
+          False
+        (snakeHead :: snakeTail) ->
+          any ((==) snakeHead) snakeTail
+  in
+     Signal.map snakePosIntersects snake
 
 
 coordsGenerator : Random.Generator { x: Int, y: Int }
