@@ -3,7 +3,7 @@ module Main (..) where
 import List exposing (..)
 import Color exposing (..)
 import Graphics.Element exposing (Element)
-import Text
+import Window
 import Screen
 import Keyboard
 import Signal
@@ -28,7 +28,7 @@ type alias Apple =
 
 main : Signal Element
 main =
-    drawScreen apple snake
+    drawPage
 
 
 boardSize : Int
@@ -36,8 +36,17 @@ boardSize =
     10
 
 
-drawScreen : Apple -> Snake -> Signal Element
-drawScreen apple snake =
+drawPage : Signal Element
+drawPage =
+    let
+        pageFrame frame score dimensions =
+            Screen.printPage dimensions (Screen.printScore score) frame
+    in
+        Signal.map3 pageFrame screen score Window.dimensions
+
+
+screen : Signal Element
+screen =
     let
         drawApplePos =
             Screen.colorCell red
@@ -49,26 +58,34 @@ drawScreen apple snake =
             Screen.size boardSize
                 |> drawApplePos applePos
                 |> drawSnakePos snakePos
-                |> Screen.print
+                |> Screen.printGame
 
         drawGame gameEnded applePos snakePos =
             if gameEnded then
-                scoreScreen
+                Screen.printEnd
             else
                 drawFrame applePos snakePos
     in
-        Signal.map3 drawGame (gameOver snake) apple snake
+        Signal.map3 drawGame gameOver apple snake
 
 
-scoreScreen : Element
-scoreScreen =
-    Text.fromString "GAME OVER!"
-        |> Graphics.Element.centered
-
-
-gameOver : Snake -> Signal Bool
-gameOver snake =
+gameOver : Signal Bool
+gameOver =
     Signal.foldp (||) False (snakeCollides snake)
+
+
+score : Signal Int
+score =
+    let
+        snakeLength = Signal.map length snake
+
+        newScore ( newLength, gameEnded ) oldLength =
+            if gameEnded then
+                oldLength
+            else
+                newLength
+    in
+        Signal.foldp newScore 1 (Signal.map2 (,) snakeLength gameOver)
 
 
 snake : Snake

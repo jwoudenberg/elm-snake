@@ -4,6 +4,7 @@ import List exposing (..)
 import Color exposing (..)
 import Graphics.Collage exposing (..)
 import Graphics.Element exposing (..)
+import Text
 
 
 type alias Coords =
@@ -22,8 +23,8 @@ size screenSize =
         repeat screenSize row
 
 
-print : Screen -> Element
-print screen =
+printGame : Screen -> Element
+printGame screen =
     let
         printRow row =
             map cell row
@@ -31,6 +32,48 @@ print screen =
     in
         map printRow screen
             |> flow down
+
+
+printEnd : Element
+printEnd =
+    Text.fromString "GAME OVER!"
+        |> Graphics.Element.centered
+
+
+printScore : Int -> Element
+printScore score =
+    toString score
+        |> (++) "SCORE: "
+        |> Text.fromString
+        |> centered
+
+
+printPage : ( Int, Int ) -> Element -> Element -> Element
+printPage ( width, height ) score game =
+    let
+        centerScreen =
+            container width height middle
+
+        frameGame =
+            container width 100 middle
+
+        frameScore =
+            container width 40 middle
+
+        frameFooter =
+            container width 40 middle
+    in
+        flow down [ frameScore score, frameGame game, frameFooter footer ]
+            |> centerScreen
+
+
+footer : Element
+footer =
+    let
+        url = "github.com/jwoudenberg/elm-snake"
+    in
+        Text.link ("http://" ++ url) (Text.fromString url)
+            |> centered
 
 
 colorCell : Color -> Coords -> Screen -> Screen
